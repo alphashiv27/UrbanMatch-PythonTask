@@ -181,8 +181,8 @@ class User(UserBase):
         orm_mode = True
 
 class InterestFilter(BaseModel):
-    city: List[str]
-    gender: List[str]
+    city: set[str]
+    gender: set[str]
     age_range_start: int
     age_range_end: int
 ```
@@ -195,7 +195,7 @@ class InterestFilter(BaseModel):
 3. **Match**: Provide an `InterestFilter` JSON body to `/match/{user_id}`.
 4. **Email Validation**: Test `GET /validate_email/{email}` with various email formats.
 
-You can also write automated tests with a framework like **pytest**:
+You can also write automated tests with  **pytest** in the root directory:
 ```bash
 pytest
 ```
@@ -206,7 +206,7 @@ pytest
 This project is licensed under the MIT License.
 
 ## Author
-Your Name — [LinkedIn Profile](https://www.linkedin.com)
+Your Name — [LinkedIn Profile](https://www.linkedin.com/in/sks2712)
 
 ---
 
