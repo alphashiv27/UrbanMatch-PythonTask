@@ -13,4 +13,3 @@ class User(Base):
     email = Column(String, unique=True, index=True)
     city = Column(String, index=True)
     interests = Column(MutableList.as_mutable(JSON))
-

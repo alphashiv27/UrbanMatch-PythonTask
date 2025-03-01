@@ -18,8 +18,13 @@ def get_db():
 @app.post("/users/", response_model=schemas.User)
 def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
     # Validate email
-    if (validate_email(user.email) == False):
-        raise HTTPException(status_code=400, detail="Invalid email")
+    validation_response = check_email_internally(db, user.email)
+    if not validation_response.is_valid:
+        if validation_response.error == schemas.InvalidEmailEnum.INVALID_EMAIL:
+            raise HTTPException(status_code=400, detail="Invalid email")
+        elif validation_response.error == schemas.InvalidEmailEnum.DUPLICATE_EMAIL:
+            raise HTTPException(status_code=400, 
+                                detail="Email already belongs to other user")
     
     db_user = models.User(**user.dict())
     db.add(db_user)
@@ -30,8 +35,14 @@ def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
 @app.put("/users/{user_id}", response_model=schemas.User)
 def update_user(user: schemas.UserUpdate, user_id: int, db: Session = Depends(get_db)):
     # Validate email
-    if (validate_email(user.email) == False):
-        raise HTTPException(status_code=400, detail="Invalid email")
+    validation_response = check_email_internally(db, user.email)
+    if not validation_response.is_valid:
+        if validation_response.error == schemas.InvalidEmailEnum.INVALID_EMAIL:
+            raise HTTPException(status_code=400, detail="Invalid email")
+        elif validation_response.user_id != user_id:
+            raise HTTPException(status_code=400, 
+                                detail="Email already belongs to other user")
+
     
     db_user = db.query(models.User).filter(models.User.id == user_id).first()
     if db_user is None:
@@ -63,9 +74,22 @@ def match_user(user_id: int, interest: schemas.InterestFilter, db: Session = Dep
                      and any(interest in matched_user.interests for interest in user.interests)]
     return matched_users
 
-@app.get("/validate_email/{email}", response_model=bool)
+@app.get("/validate_email/{email}", response_model=schemas.ValidateEmailResponse)
 def validate_email(email: str, db: Session = Depends(get_db)):
-    return re.match(r'^[a-z0-9]+[\._]?[a-z0-9]+[@]\w+[.]\w+$', email) is not None
+    return check_email_internally(db, email)
+
+def check_email_internally(db: Session, email: str):
+    # Regex check
+    if re.match(r'^[a-z0-9]+[\._]?[a-z0-9]+[@]\w+[.]\w+$', email) is None:
+        return schemas.InvalidEmailResponse()
+
+    # Duplicate check
+    user = db.query(models.User).filter(models.User.email == email).first()
+    if user is not None:
+        return schemas.DuplicateEmailResponse(user_id=user.id)
+
+    # Otherwise, it's valid and not taken
+    return schemas.ValidateEmailResponse(is_valid=True)
 
 @app.get("/users/", response_model=list[schemas.User])
 def read_users(skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):
@@ -82,15 +106,23 @@ def read_user(user_id: int, db: Session = Depends(get_db)):
 @app.post("/users/bulk", response_model=list[schemas.User])
 def create_users_bulk(users: list[schemas.UserCreate], db: Session = Depends(get_db)):
     new_users = []
-    
+
     for user_data in users:
         # Validate email
-        if not validate_email(user_data.email):
-            raise HTTPException(
-                status_code=400, 
-                detail=f"Invalid email: {user_data.email}"
-            )
-        
+        validate_email_response = check_email_internally(db, user_data.email)
+        if not validate_email_response.is_valid:
+            if validate_email_response.error == schemas.InvalidEmailEnum.INVALID_EMAIL:
+                raise HTTPException(
+                    status_code=400, 
+                    detail=f"Invalid email: {user_data.email}"
+                )
+            else:
+                raise HTTPException(
+                    status_code=400, 
+                    detail=f"Duplicate email: {user_data.email}"
+                )
+
+
         db_user = models.User(**user_data.dict())
         new_users.append(db_user)
     
@@ -101,4 +133,6 @@ def create_users_bulk(users: list[schemas.UserCreate], db: Session = Depends(get
         db.refresh(user)
         
     return new_users
+
+
 

@@ -154,18 +154,23 @@ def test_match_users(create_test_data):
 
 
 def test_validate_email():
-    """
-    Test the email validation endpoint.
-    """
+    
     valid_email = "valid@example.com"
     invalid_email = "invalidexamplecom"
 
-    # Check valid email
+    # 1) Check valid email
     response_valid = client.get(f"/validate_email/{valid_email}")
     assert response_valid.status_code == 200
-    assert response_valid.json() is True
+    valid_data = response_valid.json()
+    # We expect is_valid=True, no error
+    assert valid_data["is_valid"] is True
+    assert "error" not in valid_data  # or check your usage
 
-    # Check invalid email
+    # 2) Check invalid email
     response_invalid = client.get(f"/validate_email/{invalid_email}")
     assert response_invalid.status_code == 200
-    assert response_invalid.json() is False
+    invalid_data = response_invalid.json()
+    # We expect is_valid=False, plus an error
+    print(invalid_data)
+    assert invalid_data["is_valid"] is False
+    assert invalid_data["error"] == "Invalid email"
