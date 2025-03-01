@@ -124,9 +124,7 @@ def test_update_user():
 
 
 def test_delete_user():
-    """
-    Test deleting a user (ID=1).
-    """
+
     response = client.delete("/users/1")
     if response.status_code == 404:
         pytest.skip("User with ID=1 not found, skipping test.")
@@ -157,20 +155,25 @@ def test_validate_email():
     
     valid_email = "valid@example.com"
     invalid_email = "invalidexamplecom"
+    duplicate_email = "rohan@example.com"
 
-    # 1) Check valid email
     response_valid = client.get(f"/validate_email/{valid_email}")
     assert response_valid.status_code == 200
     valid_data = response_valid.json()
-    # We expect is_valid=True, no error
     assert valid_data["is_valid"] is True
-    assert "error" not in valid_data  # or check your usage
+    assert "error" not in valid_data 
 
-    # 2) Check invalid email
     response_invalid = client.get(f"/validate_email/{invalid_email}")
     assert response_invalid.status_code == 200
     invalid_data = response_invalid.json()
-    # We expect is_valid=False, plus an error
     print(invalid_data)
     assert invalid_data["is_valid"] is False
     assert invalid_data["error"] == "Invalid email"
+
+    response_duplicate = client.get(f"/validate_email/{duplicate_email}")
+    assert response_duplicate.status_code == 200
+    duplicate_data = response_duplicate.json()
+    assert duplicate_data["is_valid"] is False
+    assert duplicate_data["error"] == "Duplicate email"
+    assert "user_id" in duplicate_data
+    assert duplicate_data["user_id"] == 5
