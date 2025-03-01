@@ -139,7 +139,7 @@ This application manages user profiles for a simple matchmaking system. You can 
 - **Description:** Validates an email address using a regex.
 - **Response:**
   - `true` if valid.
-  - `false` if invalid.
+  - `false`, error if invalid.
 
 ---
 
