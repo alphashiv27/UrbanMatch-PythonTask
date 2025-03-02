@@ -208,7 +208,4 @@ This project is licensed under the MIT License.
 ## Author
 Your Name — [LinkedIn Profile](https://www.linkedin.com/in/sks2712)
 
----
-
-This updated README reflects the latest endpoints and logic in the application, including the bulk user creation endpoint, the switch to a POST method for matching users, and the existing CRUD operations.
 
